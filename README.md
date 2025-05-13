@@ -59,7 +59,7 @@ To begin deploying applications, you need to add servers to your Dokploy cluster
 
 After setting up the main Dokploy instance, you can expand your cluster by adding worker nodes. These worker instances will help distribute the workload for your deployments.
 
-See more info about configuring your cluster on the [Dokploy Cluster Docs](https://docs.dokploy.com/en/docs/core/server/cluster).
+See more info about configuring your cluster on the [Dokploy Cluster Docs](https://docs.dokploy.com/docs/core/cluster).
 
 ## Project Structure
 
