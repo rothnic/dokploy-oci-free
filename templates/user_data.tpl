@@ -20,20 +20,14 @@ write_files:
       # Wait for DNS + egress (handles early boot races)
       for i in {1..30}; do
         if curl -sS https://www.google.com >/dev/null; then break; fi
-        echo "network not ready yet (attempt $i)"; sleep 5
+        echo "network not ready (attempt $i)"
+        sleep 5
       done
 
-      # Install Docker first (with retries)
-      curl --fail --retry 10 --retry-all-errors --connect-timeout 5 --max-time 60 \
-        -fsSL https://get.docker.com | sh
+      curl -fsSL https://get.docker.com | sh
       systemctl enable --now docker
-
-      # Ensure kernel forwarding; let Docker manage FORWARD chain
       sysctl -w net.ipv4.ip_forward=1
-
-      # Install Dokploy (with retries)
-      curl --fail --retry 10 --retry-all-errors --connect-timeout 5 --max-time 60 \
-        -fsSL https://dokploy.com/install.sh | sh
+      curl -fsSL https://dokploy.com/install.sh | sh
 
       echo "== $(date -Is) dokploy install complete =="
 
@@ -42,10 +36,8 @@ write_files:
     owner: root:root
     content: |
       [Unit]
-      Description=Install Dokploy after network is online
-      Wants=network-online.target
-      After=network-online.target cloud-init.target
-      StartLimitIntervalSec=0
+      Description=Install Dokploy after basic network is up
+      After=network.target cloud-init.target
 
       [Service]
       Type=oneshot
@@ -59,4 +51,4 @@ write_files:
 runcmd:
   - systemctl daemon-reload
   - systemctl enable dokploy-install.service
-  - systemctl start dokploy-install.service
+  - systemctl start dokploy-install.service --no-block
