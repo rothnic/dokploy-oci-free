@@ -9,16 +9,27 @@ chmod 600 /root/.ssh/authorized_keys
 # Add ubuntu user to sudoers
 echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# OpenSSH
-apt install -y openssh-server
+# OpenSSH and netfilter-persistent
+apt update
+apt install -y openssh-server netfilter-persistent
 systemctl status sshd
 
 # Permit root login
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
 
-# Install Dokploy
-curl -sSL https://dokploy.com/install.sh | sh
+# Install Docker first with retries
+echo "Installing Docker with retry logic..."
+curl --fail --retry 10 --retry-all-errors -fsSL https://get.docker.com | sh
+systemctl enable --now docker
+
+# Wait for Docker to be ready
+echo "Waiting for Docker to be ready..."
+sleep 10
+
+# Install Dokploy with retries
+echo "Installing Dokploy with retry logic..."
+curl --fail --retry 10 --retry-all-errors -fsSL https://dokploy.com/install.sh | sh
 
 # Allow Docker Swarm traffic
 ufw allow 80,443,3000,996,7946,4789,2377/tcp
@@ -29,10 +40,5 @@ iptables -I INPUT 1 -p udp --dport 7946 -j ACCEPT
 iptables -I INPUT 1 -p tcp --dport 7946 -j ACCEPT
 iptables -I INPUT 1 -p udp --dport 4789 -j ACCEPT
 
-# Reorder FORWARD chain rules:
-# Remove the default REJECT rule (ignore error if not found)
-iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited || true
-# Append the REJECT rule at the end so that Docker rules can be matched first
-iptables -A FORWARD -j REJECT --reject-with icmp-host-prohibited
-
+# Save iptables rules (avoid interfering with Docker FORWARD chain)
 netfilter-persistent save
