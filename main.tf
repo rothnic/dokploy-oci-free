@@ -1,3 +1,9 @@
+# Template variables for cloud-config
+locals {
+  root_authorized_keys = var.ssh_authorized_keys
+  worker_public_ips    = join("\n", [for instance in oci_core_instance.dokploy_worker : instance.public_ip])
+}
+
 # Main instance
 resource "oci_core_instance" "dokploy_main" {
   display_name        = "dokploy-main-${random_string.resource_code.result}"
@@ -9,7 +15,10 @@ resource "oci_core_instance" "dokploy_main" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    user_data           = base64encode(file("./templates/user_data.tpl"))
+    user_data           = base64encode(templatefile("${path.module}/templates/manager_user_data.tpl", {
+      root_authorized_keys = local.root_authorized_keys,
+      workers_public_ips   = local.worker_public_ips,
+    }))
   }
 
   create_vnic_details {
@@ -97,7 +106,9 @@ resource "oci_core_instance" "dokploy_worker" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    user_data           = base64encode(file("./bin/dokploy-worker.sh"))
+    user_data           = base64encode(templatefile("${path.module}/templates/worker_user_data.tpl", {
+      root_authorized_keys = local.root_authorized_keys,
+    }))
   }
 
   create_vnic_details {

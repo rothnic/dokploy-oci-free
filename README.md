@@ -57,15 +57,23 @@ To begin deploying applications, you need to add servers to your Dokploy cluster
 
 ### Configure a Dokploy Cluster with new workers
 
-After setting up the main Dokploy instance, you can expand your cluster by adding worker nodes. These worker instances will help distribute the workload for your deployments.
+Worker nodes are automatically configured and joined to the Docker Swarm cluster during deployment. The infrastructure includes comprehensive security hardening that passes all [Dokploy security checks](https://docs.dokploy.com/docs/core/multi-server/security), including:
+
+- UFW firewall with restrictive defaults
+- SSH hardening (key-only authentication, no password/PAM)
+- Fail2Ban protection against brute force attacks
+- Proper Docker Swarm networking configuration
+
+**Note**: While workers are automatically joined to the swarm, you still need to manually add each worker as a remote server in the Dokploy dashboard to deploy applications to them. Non-root server setup is being tracked in [Dokploy issue #1126](https://github.com/Dokploy/dokploy/issues/1126).
 
 See more info about configuring your cluster on the [Dokploy Cluster Docs](https://docs.dokploy.com/docs/core/cluster).
 
 ## Project Structure
 
--   `bin/`: Contains bash scripts for setting up Dokploy on both the main instance and the worker instances.
-    -   `dokploy-main.sh`: Script to install Dokploy on the main instance.
-    -   `dokploy-worker.sh`: Script to configure necessary dependencies on worker instances.
+-   `bin/`: Contains bash scripts for legacy setup approaches (now replaced by cloud-config templates).
+-   `templates/`: Cloud-config templates for automated, secure deployment.
+    -   `manager_user_data.tpl`: Main instance template with Dokploy installation and automatic worker joining.
+    -   `worker_user_data.tpl`: Worker instance template with security hardening and Docker setup.
 -   `helper.tf`: Contains helper functions and reusable modules to streamline the infrastructure setup.
 -   `doc/`: Directory for images used in the README (e.g., screenshots of Dokploy setup).
 -   `locals.tf`: Defines local values used throughout the Terraform configuration, such as dynamic values or reusable expressions.
