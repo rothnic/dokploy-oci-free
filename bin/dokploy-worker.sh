@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -euo pipefail
 # Add ubuntu SSH authorized keys to the root user
 mkdir -p /root/.ssh
 cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/
@@ -9,32 +9,36 @@ chmod 600 /root/.ssh/authorized_keys
 # Add ubuntu user to sudoers
 echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# OpenSSH and netfilter-persistent
-apt update
-apt install -y openssh-server netfilter-persistent
-systemctl status sshd
+# OpenSSH
+apt-get update -y
+apt-get install -y openssh-server
+systemctl enable --now ssh
 
 # Permit root login
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-systemctl restart sshd
+systemctl restart ssh
 
-# Install Docker with retries
+# Install Docker with retries (workers need Docker for Swarm)
 echo "Installing Docker with retry logic..."
-curl --fail --retry 10 --retry-all-errors -fsSL https://get.docker.com | sh
+for i in {1..10}; do
+  if curl --fail --retry 3 --retry-all-errors --connect-timeout 5 --max-time 60 \
+    -fsSL https://get.docker.com | sh; then
+    break
+  fi
+  echo "Docker install attempt $i failed, retrying..."
+  sleep 10
+done
 systemctl enable --now docker
 
-# Wait for Docker to be ready
-echo "Waiting for Docker to be ready..."
-sleep 10
+# Swarm/overlay ports; avoid blanket FORWARD REJECT (Docker manages iptables)
+ufw allow 80,443,3000,996,7946,4789,2377/tcp || true
+ufw allow 7946,4789,2377/udp || true
 
-# Allow Docker Swarm traffic
-ufw allow 80,443,3000,996,7946,4789,2377/tcp
-ufw allow 7946,4789,2377/udp
+iptables -I INPUT 1 -p tcp --dport 2377 -j ACCEPT || true
+iptables -I INPUT 1 -p udp --dport 7946 -j ACCEPT || true
+iptables -I INPUT 1 -p tcp --dport 7946 -j ACCEPT || true
+iptables -I INPUT 1 -p udp --dport 4789 -j ACCEPT || true
 
-iptables -I INPUT 1 -p tcp --dport 2377 -j ACCEPT
-iptables -I INPUT 1 -p udp --dport 7946 -j ACCEPT
-iptables -I INPUT 1 -p tcp --dport 7946 -j ACCEPT
-iptables -I INPUT 1 -p udp --dport 4789 -j ACCEPT
+# Do not add blanket REJECTs to FORWARD; prefer DOCKER-USER if policy needed.
 
-# Save iptables rules (avoid interfering with Docker FORWARD chain)
-netfilter-persistent save
+netfilter-persistent save || true

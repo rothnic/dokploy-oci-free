@@ -9,7 +9,7 @@ resource "oci_core_instance" "dokploy_main" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    user_data           = base64encode(file("./bin/dokploy-main.sh"))
+    user_data           = base64encode(file("./templates/user_data.tpl"))
   }
 
   create_vnic_details {
