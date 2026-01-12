@@ -1,8 +1,9 @@
 # Template variables for cloud-config
 locals {
   root_authorized_keys = var.ssh_authorized_keys
-  # Format worker IPs with proper indentation for YAML content block (6 spaces)
-  worker_public_ips    = length(oci_core_instance.dokploy_worker) > 0 ? join("\n      ", [for instance in oci_core_instance.dokploy_worker : instance.public_ip]) : ""
+  worker_ips_list      = [for instance in oci_core_instance.dokploy_worker : instance.public_ip]
+  # Use indent() to properly nest worker IPs in YAML content block (6 spaces)
+  worker_public_ips    = length(local.worker_ips_list) > 0 ? indent(6, join("\n", local.worker_ips_list)) : ""
 }
 
 # Main instance
