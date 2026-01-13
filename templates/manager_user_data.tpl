@@ -42,13 +42,6 @@ write_files:
       bantime = 1h
       port = ssh
 
-  # List of worker PUBLIC IPs (Terraform fills this)
-  - path: /etc/swarm/workers-public.txt
-    permissions: '0644'
-    owner: root:root
-    content: |
-      ${workers_public_ips}
-
   # Orchestrator: ensures manager is set up, then joins workers
   - path: /usr/local/sbin/swarm-join-workers.sh
     permissions: '0755'
@@ -112,6 +105,13 @@ write_files:
       WantedBy=multi-user.target
 
 runcmd:
+  # Create worker IPs file (avoids YAML injection issues)
+  - mkdir -p /etc/swarm
+  - |
+    cat > /etc/swarm/workers-public.txt << 'WORKER_IPS_EOF'
+    ${workers_public_ips}
+    WORKER_IPS_EOF
+
   # Apply SSH config
   - systemctl reload ssh || systemctl reload sshd
 
