@@ -47,7 +47,7 @@ write_files:
     permissions: '0644'
     owner: root:root
     content: |
-${workers_public_ips}
+      ${workers_public_ips}
 
   # Orchestrator: ensures manager is set up, then joins workers
   - path: /usr/local/sbin/swarm-join-workers.sh
