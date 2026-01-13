@@ -16,12 +16,7 @@ write_files:
     content: |
       ${root_authorized_keys}
 
-  # Ubuntu user SSH keys (for initial SSH access)
-  - path: /home/ubuntu/.ssh/authorized_keys
-    permissions: '0600'
-    owner: ubuntu:ubuntu
-    content: |
-      ${root_authorized_keys}
+
 
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
@@ -50,6 +45,16 @@ write_files:
       port = ssh
 
 runcmd:
+  # Set up ubuntu user SSH keys (must be in runcmd, not write_files, as ubuntu user exists later)
+  - mkdir -p /home/ubuntu/.ssh
+  - |
+    cat > /home/ubuntu/.ssh/authorized_keys << 'UBUNTU_SSH_EOF'
+    ${root_authorized_keys}
+    UBUNTU_SSH_EOF
+  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+  - chmod 700 /home/ubuntu/.ssh
+  - chmod 600 /home/ubuntu/.ssh/authorized_keys
+
   # Apply SSH config
   - systemctl reload ssh || systemctl reload sshd
 
