@@ -16,6 +16,13 @@ write_files:
     content: |
       ${root_authorized_keys}
 
+  # Ubuntu user SSH keys (for initial SSH access)
+  - path: /home/ubuntu/.ssh/authorized_keys
+    permissions: '0600'
+    owner: ubuntu:ubuntu
+    content: |
+      ${root_authorized_keys}
+
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
     permissions: '0644'
