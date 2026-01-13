@@ -110,8 +110,8 @@ runcmd:
   # Set up ubuntu user SSH keys (must be in runcmd, not write_files, as ubuntu user exists later)
   - mkdir -p /home/ubuntu/.ssh
   - bash -c 'cat > /home/ubuntu/.ssh/authorized_keys << "UBUNTU_SSH_EOF"
-    ${root_authorized_keys}
-    UBUNTU_SSH_EOF'
+${root_authorized_keys}
+UBUNTU_SSH_EOF'
   - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
   - chmod 700 /home/ubuntu/.ssh
   - chmod 600 /home/ubuntu/.ssh/authorized_keys
@@ -119,8 +119,8 @@ runcmd:
   # Create worker IPs file (avoids YAML injection issues)
   - mkdir -p /etc/swarm
   - bash -c 'cat > /etc/swarm/workers-public.txt << "WORKER_IPS_EOF"
-    ${workers_public_ips}
-    WORKER_IPS_EOF'
+${workers_public_ips}
+WORKER_IPS_EOF'
 
   # Apply SSH config
   - systemctl reload ssh || systemctl reload sshd
