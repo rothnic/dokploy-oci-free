@@ -180,7 +180,7 @@ ESCAPED_PRIVATE=$(echo "$PRIVATE_KEY" | jq -Rs .)
 SSH_CREATE_RESPONSE=$(curl -sf -X POST "http://localhost:3000/api/trpc/sshKey.create?batch=1" \
     -H "Content-Type: application/json" \
     -H "x-api-key: $API_KEY" \
-    -d "{\"0\":{\"json\":{\"name\":\"OCI-Workers\",\"publicKey\":$ESCAPED_PUBLIC,\"privateKey\":$ESCAPED_PRIVATE}}}" 2>&1)
+    -d "{\"0\":{\"json\":{\"name\":\"OCI-Workers\",\"publicKey\":$ESCAPED_PUBLIC,\"privateKey\":$ESCAPED_PRIVATE,\"organizationId\":\"$ORG_ID\"}}}" 2>&1)
 log "SSH create response: $SSH_CREATE_RESPONSE"
 
 SSH_KEY_ID=$(echo "$SSH_CREATE_RESPONSE" | jq -r '.[0].result.data.json.sshKeyId' 2>/dev/null)
