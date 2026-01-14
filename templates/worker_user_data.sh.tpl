@@ -153,7 +153,7 @@ log "Registering worker in Dokploy with IP: $MY_IP"
 SERVER_CREATE_RESPONSE=$(curl -sf -X POST "http://$MANAGER_IP:3000/api/trpc/server.create?batch=1" \
     -H "Content-Type: application/json" \
     -H "x-api-key: $API_KEY" \
-    -d "{\"0\":{\"json\":{\"name\":\"$WORKER_NAME\",\"ipAddress\":\"$MY_IP\",\"port\":22,\"username\":\"root\",\"sshKeyId\":\"$SSH_KEY_ID\"}}}" 2>&1)
+    -d "{\"0\":{\"json\":{\"name\":\"$WORKER_NAME\",\"ipAddress\":\"$MY_IP\",\"port\":22,\"username\":\"root\",\"sshKeyId\":\"$SSH_KEY_ID\",\"serverType\":\"deploy\"}}}" 2>&1)
 log "Server create response: $SERVER_CREATE_RESPONSE"
 
 SERVER_ID=$(echo "$SERVER_CREATE_RESPONSE" | jq -r '.[0].result.data.json.serverId' 2>/dev/null)
