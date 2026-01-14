@@ -111,7 +111,7 @@ cmd_get_main_ip() {
     
     if [[ -n "$job_id" ]]; then
         oci resource-manager job-output-summary list-job-outputs --job-id "$job_id" \
-            --query 'data.items[?"output-name"==`dokploy_dashboard`]."output-value"' --raw-output 2>/dev/null | \
+            --query 'data.items[?"output-name"==`dokploy_dashboard_url`]."output-value"' --raw-output 2>/dev/null | \
             grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | head -1
     fi
 }
@@ -123,7 +123,7 @@ cmd_get_worker_ips() {
     
     if [[ -n "$job_id" ]]; then
         oci resource-manager job-output-summary list-job-outputs --job-id "$job_id" \
-            --query 'data.items[?"output-name"==`dokploy_worker_ips`]."output-value"' --raw-output 2>/dev/null | \
+            --query 'data.items[?"output-name"==`worker_nodes`]."output-value"' --raw-output 2>/dev/null | \
             grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tr '\n' ' '
     fi
 }
