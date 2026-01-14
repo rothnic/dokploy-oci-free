@@ -15,15 +15,13 @@ write_files:
   - path: /tmp/ubuntu_authorized_keys.txt
     permissions: '0600'
     owner: root:root
-    content: |
-      ${root_authorized_keys}
+    content: "${root_authorized_keys}\n"
 
   # Root key SSH so we can run the upstream script as root (unchanged)
   - path: /root/.ssh/authorized_keys
     permissions: '0600'
     owner: root:root
-    content: |
-      ${root_authorized_keys}
+    content: "${root_authorized_keys}\n"
 
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
