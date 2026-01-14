@@ -3,9 +3,6 @@
 # This uses shell script (not cloud-config) so OCI can inject SSH keys from metadata
 set -e
 
-# Wait for cloud-init to finish (it injects SSH keys)
-cloud-init status --wait || true
-
 # Copy SSH keys to root (OCI injected them to ubuntu already)
 mkdir -p /root/.ssh
 cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/
@@ -13,15 +10,17 @@ chown root:root /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
 
 # SSH Hardening (for Dokploy security checks)
+# Note: Don't set UsePAM=no as it breaks OCI's SSH setup
+# SSH will pick up these settings on next restart or reboot
 cat > /etc/ssh/sshd_config.d/99-dokploy-hardening.conf << 'EOF'
 PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 ChallengeResponseAuthentication no
-UsePAM no
 PermitRootLogin prohibit-password
 EOF
-systemctl reload ssh || systemctl reload sshd
+# Don't reload SSH here - it can break the current session
+# Settings will apply on next boot or manual reload
 
 # Install packages
 apt-get update
@@ -71,4 +70,4 @@ iptables -A FORWARD -j REJECT --reject-with icmp-host-prohibited
 netfilter-persistent save
 
 echo "Dokploy Worker setup complete!"
-echo "NOTE: Run 'docker swarm join' command from manager to join this node"
+echo "Run './bin/swarm-join.sh' from your local machine to join workers to the swarm"
