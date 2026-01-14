@@ -13,7 +13,7 @@ MANAGER_IP="$1"
 WORKER_NAME="$2"
 WORKER_PUBLIC_IP="$3"
 
-log() { echo "[$(date '+%H:%M:%S')] $*" | tee -a /var/log/dokploy-worker-setup.log; }
+log() { echo "[$(date '+%H:%M:%S')] $*" | tee -a /var/log/dokploy-worker-setup.log >&2; }
 
 log "Starting Dokploy Worker setup..."
 log "Manager IP: $MANAGER_IP"
@@ -97,7 +97,7 @@ poll_manager() {
     local endpoint="$1"
     local attempt=0
     local delay=10
-    local max_delay=60
+    local max_delay=600
     
     while true; do
         attempt=$((attempt + 1))
@@ -110,9 +110,9 @@ poll_manager() {
             return 0
         fi
         
-        log "Not ready, waiting $${delay}s..."
+        log "Not ready, waiting $${delay}s (max 10min)..."
         sleep $delay
-        delay=$((delay + 10))
+        delay=$((delay + 30))
         [ $delay -gt $max_delay ] && delay=$max_delay
     done
 }
