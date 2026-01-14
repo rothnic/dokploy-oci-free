@@ -133,11 +133,23 @@ if [ -z "$SESSION_TOKEN" ]; then
 fi
 log "Session token obtained"
 
+log "Fetching organization ID..."
+ORG_RESPONSE=$(curl -sf "http://localhost:3000/api/trpc/organization.all?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D" \
+    -b /tmp/cookies.txt 2>&1)
+log "Org response: $ORG_RESPONSE"
+
+ORG_ID=$(echo "$ORG_RESPONSE" | jq -r '.[0].result.data.json[0].id' 2>/dev/null)
+if [ -z "$ORG_ID" ] || [ "$ORG_ID" = "null" ]; then
+    log "ERROR: Failed to get organization ID"
+    exit 1
+fi
+log "Organization ID: $ORG_ID"
+
 log "Creating API key..."
 API_KEY_RESPONSE=$(curl -sf -X POST "http://localhost:3000/api/trpc/user.createApiKey?batch=1" \
     -H "Content-Type: application/json" \
-    -b "better-auth.session_token=$SESSION_TOKEN" \
-    -d '{"0":{"json":{"name":"AutoSetup","expiresIn":null,"prefix":"auto","metadata":{},"rateLimitEnabled":false,"rateLimitTimeWindow":null,"rateLimitMax":null,"remaining":null,"refillAmount":null,"refillInterval":null},"meta":{"values":{"expiresIn":["undefined"],"rateLimitTimeWindow":["undefined"],"rateLimitMax":["undefined"],"remaining":["undefined"],"refillAmount":["undefined"],"refillInterval":["undefined"]}}}}' 2>&1)
+    -b /tmp/cookies.txt \
+    -d "{\"0\":{\"json\":{\"name\":\"AutoSetup\",\"expiresIn\":null,\"prefix\":\"auto\",\"metadata\":{\"organizationId\":\"$ORG_ID\"},\"rateLimitEnabled\":false,\"rateLimitTimeWindow\":null,\"rateLimitMax\":null,\"remaining\":null,\"refillAmount\":null,\"refillInterval\":null},\"meta\":{\"values\":{\"expiresIn\":[\"undefined\"],\"rateLimitTimeWindow\":[\"undefined\"],\"rateLimitMax\":[\"undefined\"],\"remaining\":[\"undefined\"],\"refillAmount\":[\"undefined\"],\"refillInterval\":[\"undefined\"]}}}}" 2>&1)
 log "API key response: $API_KEY_RESPONSE"
 
 API_KEY=$(echo "$API_KEY_RESPONSE" | jq -r '.[0].result.data.json.key' 2>/dev/null)
