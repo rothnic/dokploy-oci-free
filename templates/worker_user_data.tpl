@@ -8,16 +8,17 @@ packages:
   - iptables-persistent
   - netfilter-persistent
 
+# Configure SSH for ubuntu user (OCI's default user)
+users:
+  - name: ubuntu
+    ssh_authorized_keys:
+      - ${root_authorized_keys}
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
 write_files:
   # Root key SSH so we can run the upstream script as root (unchanged)
   - path: /root/.ssh/authorized_keys
-    permissions: '0600'
-    owner: root:root
-    content: |
-      ${root_authorized_keys}
-
-  # Temporary file for ubuntu SSH keys (will be copied in runcmd)
-  - path: /tmp/ubuntu_authorized_keys.txt
     permissions: '0600'
     owner: root:root
     content: |
@@ -50,15 +51,8 @@ write_files:
       port = ssh
 
 runcmd:
-  # Set up ubuntu user SSH keys (must be in runcmd, not write_files, as ubuntu user exists later)
-  - mkdir -p /home/ubuntu/.ssh
-  - cp /tmp/ubuntu_authorized_keys.txt /home/ubuntu/.ssh/authorized_keys
-  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
-  - chmod 700 /home/ubuntu/.ssh
-  - chmod 600 /home/ubuntu/.ssh/authorized_keys
-  - rm -f /tmp/ubuntu_authorized_keys.txt
-
   # UFW defaults + allows (keeps Security tab green)
+  # IMPORTANT: Set up firewall FIRST, before touching SSH
   - ufw --force reset
   - ufw default deny incoming
   - ufw default allow outgoing
@@ -73,11 +67,11 @@ runcmd:
   - ufw allow 4789/udp
   - ufw --force enable
 
+  # Apply SSH hardening config AFTER firewall is fully configured
+  - systemctl reload ssh || systemctl reload sshd
+
   # Fail2Ban on
   - systemctl enable --now fail2ban
-
-  # Reload SSH after keys are in place (config was written by write_files earlier)
-  - systemctl reload ssh || systemctl reload sshd
 
   # Run upstream Dokploy script as root
   - curl -fsSL https://dokploy.com/install.sh | sh
