@@ -18,3 +18,5 @@
 **/ssh-keys/
 # .tfstate files
 # SSH keys - never commit
+tmp/
+.sisyphus/

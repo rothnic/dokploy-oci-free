@@ -10,31 +10,43 @@ output "dokploy_admin_email" {
 
 output "dokploy_admin_password" {
   description = "Temporary admin password - CHANGE THIS IMMEDIATELY after first login!"
-  value       = local.admin_password
-  sensitive   = true
+  value       = nonsensitive(local.admin_password)
+  sensitive   = false
 }
 
 output "dokploy_setup_instructions" {
   description = "Post-deployment instructions"
   value       = <<-EOT
-    ============================================
-    DOKPLOY DEPLOYMENT COMPLETE
-    ============================================
-    
-    Dashboard: http://${oci_core_instance.dokploy_main.public_ip}:3000/
-    Email: ${var.dokploy_admin_email}
-    Password: Run 'terraform output -raw dokploy_admin_password' to view
-    
-    ⚠️  IMPORTANT: Please change your admin password immediately after first login!
-       Go to: Dashboard → Settings → Profile → Change Password
-    
-    Workers will automatically:
-    1. Join the Docker Swarm cluster
-    2. Register themselves in Dokploy
-    3. Add themselves to the cluster
-    
-    Wait 5-10 minutes for full setup to complete.
-    ============================================
+    ╔═══════════════════════════════════════════════════════════════════╗
+    ║                    DOKPLOY DEPLOYMENT COMPLETE                     ║
+    ╠═══════════════════════════════════════════════════════════════════╣
+    ║                                                                    ║
+    ║  Dashboard: http://${oci_core_instance.dokploy_main.public_ip}:3000/
+    ║  Email:     ${var.dokploy_admin_email}
+    ║  Password:  ${nonsensitive(local.admin_password)}
+    ║                                                                    ║
+    ║  ⚠️  SECURITY WARNING:                                            ║
+    ║  This is a TEMPORARY password visible in job logs.                ║
+    ║  CHANGE IT IMMEDIATELY after first login!                         ║
+    ║  Go to: Dashboard → Settings → Profile → Change Password          ║
+    ║                                                                    ║
+    ╠═══════════════════════════════════════════════════════════════════╣
+    ║                         SETUP STATUS                               ║
+    ╠═══════════════════════════════════════════════════════════════════╣
+    ║                                                                    ║
+    ║  ⏳ Setup takes 5-10 minutes to complete.                         ║
+    ║  The following happens automatically:                              ║
+    ║                                                                    ║
+    ║  1. Main node installs Docker + Dokploy                            ║
+    ║  2. Admin account + API key created                                ║
+    ║  3. SSH key pair generated for worker access                       ║
+    ║  4. Workers join Docker Swarm cluster                              ║
+    ║  5. Workers register in Dokploy via API                            ║
+    ║  6. Workers added to cluster                                       ║
+    ║                                                                    ║
+    ║  Check Dokploy dashboard → Cluster to verify workers.              ║
+    ║                                                                    ║
+    ╚═══════════════════════════════════════════════════════════════════╝
   EOT
 }
 

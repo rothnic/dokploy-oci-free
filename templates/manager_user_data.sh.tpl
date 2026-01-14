@@ -194,35 +194,6 @@ log "Credentials saved to $CREDS_FILE"
 log "Starting credential server on port 9999..."
 mkdir -p /opt/dokploy-server
 
-cat > /opt/dokploy-server/serve.sh << 'SERVEEOF'
-#!/bin/bash
-CREDS_FILE="/opt/dokploy-credentials.json"
-SWARM_TOKEN=$(docker swarm join-token worker -q 2>/dev/null)
-MANAGER_IP=$(hostname -I | awk '{print $1}')
-
-while true; do
-    REQUEST=$(echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n" | ncat -l -p 9999 -c 'read -r line; echo "$line"' 2>/dev/null || echo "")
-    
-    if echo "$REQUEST" | grep -q "GET /token"; then
-        if [ -n "$SWARM_TOKEN" ]; then
-            RESPONSE="docker swarm join --token $SWARM_TOKEN $MANAGER_IP:2377"
-        else
-            RESPONSE="NOT_READY"
-        fi
-        echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n$RESPONSE"
-    elif echo "$REQUEST" | grep -q "GET /credentials"; then
-        if [ -f "$CREDS_FILE" ]; then
-            cat "$CREDS_FILE"
-        else
-            echo '{"error": "not_ready"}'
-        fi
-    else
-        echo '{"error": "unknown_endpoint"}'
-    fi
-done
-SERVEEOF
-chmod +x /opt/dokploy-server/serve.sh
-
 cat > /etc/systemd/system/dokploy-token-server.service << 'EOF'
 [Unit]
 Description=Dokploy Token and Credentials Server
@@ -231,7 +202,74 @@ Requires=docker.service
 
 [Service]
 Type=simple
-ExecStart=/bin/bash -c 'while true; do CREDS=$(cat /opt/dokploy-credentials.json 2>/dev/null || echo "{}"); TOKEN=$(docker swarm join-token worker -q 2>/dev/null || echo "NOT_READY"); IP=$(hostname -I | awk "{print \$1}"); ncat -l -k -p 9999 -c "read line; if echo \"\$line\" | grep -q \"GET /token\"; then if [ \"\$TOKEN\" != \"NOT_READY\" ]; then echo \"docker swarm join --token $TOKEN $IP:2377\"; else echo NOT_READY; fi; elif echo \"\$line\" | grep -q \"GET /credentials\"; then echo \"$CREDS\"; elif echo \"\$line\" | grep -q \"GET /public-key\"; then echo \"$CREDS\" | jq -r .public_key; else echo ERROR; fi"; done'
+ExecStart=/bin/bash -c 'cd /opt && python3 -m http.server 9999 &>/dev/null & PYPID=$!; while true; do sleep 5; done'
+ExecStartPre=/bin/bash -c 'mkdir -p /opt/api; ln -sf /opt/dokploy-credentials.json /opt/api/credentials 2>/dev/null || true'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Create a simple API endpoint script that runs as a proper HTTP server
+cat > /opt/start-token-server.sh << 'SERVEREOF'
+#!/bin/bash
+CREDS_FILE="/opt/dokploy-credentials.json"
+
+# Create API directory
+mkdir -p /opt/api
+
+update_endpoints() {
+    # Token endpoint
+    SWARM_TOKEN=$(docker swarm join-token worker -q 2>/dev/null || echo "NOT_READY")
+    MANAGER_IP=$(hostname -I | awk '{print $1}')
+    if [ "$SWARM_TOKEN" != "NOT_READY" ]; then
+        echo "docker swarm join --token $SWARM_TOKEN $MANAGER_IP:2377" > /opt/api/token
+    else
+        echo "NOT_READY" > /opt/api/token
+    fi
+    
+    # Credentials endpoint
+    if [ -f "$CREDS_FILE" ]; then
+        cp "$CREDS_FILE" /opt/api/credentials
+    else
+        echo '{"error": "not_ready"}' > /opt/api/credentials
+    fi
+    
+    # Public key endpoint
+    if [ -f "$CREDS_FILE" ]; then
+        jq -r '.public_key // "NOT_READY"' "$CREDS_FILE" > /opt/api/public-key 2>/dev/null || echo "NOT_READY" > /opt/api/public-key
+    else
+        echo "NOT_READY" > /opt/api/public-key
+    fi
+}
+
+# Initial update
+update_endpoints
+
+# Start simple HTTP server in background
+cd /opt/api
+python3 -m http.server 9999 &
+SERVER_PID=$!
+
+# Keep updating endpoints every 10 seconds
+while true; do
+    sleep 10
+    update_endpoints
+done
+SERVEREOF
+chmod +x /opt/start-token-server.sh
+
+# Update the service to use our script
+cat > /etc/systemd/system/dokploy-token-server.service << 'EOF'
+[Unit]
+Description=Dokploy Token and Credentials Server
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/opt/start-token-server.sh
 Restart=always
 RestartSec=5
 

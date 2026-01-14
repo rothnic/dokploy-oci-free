@@ -97,7 +97,7 @@ poll_manager() {
     local endpoint="$1"
     local attempt=0
     local delay=10
-    local max_delay=600
+    local max_delay=60
     
     while true; do
         attempt=$((attempt + 1))
@@ -105,14 +105,14 @@ poll_manager() {
         
         RESPONSE=$(curl -sf --connect-timeout 10 "http://$MANAGER_IP:9999/$endpoint" 2>/dev/null || echo "")
         
-        if [ -n "$RESPONSE" ] && [ "$RESPONSE" != "NOT_READY" ] && [ "$RESPONSE" != "ERROR" ]; then
+        if [ -n "$RESPONSE" ] && [ "$RESPONSE" != "NOT_READY" ] && [ "$RESPONSE" != "ERROR" ] && ! echo "$RESPONSE" | grep -q "error"; then
             echo "$RESPONSE"
             return 0
         fi
         
         log "Not ready, waiting $${delay}s..."
         sleep $delay
-        delay=$((delay * 2))
+        delay=$((delay + 10))
         [ $delay -gt $max_delay ] && delay=$max_delay
     done
 }
