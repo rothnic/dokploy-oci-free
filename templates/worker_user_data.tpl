@@ -58,9 +58,6 @@ runcmd:
   - chmod 600 /home/ubuntu/.ssh/authorized_keys
   - rm -f /tmp/ubuntu_authorized_keys.txt
 
-  # Apply SSH config
-  - systemctl reload ssh || systemctl reload sshd
-
   # UFW defaults + allows (keeps Security tab green)
   - ufw --force reset
   - ufw default deny incoming
@@ -78,6 +75,9 @@ runcmd:
 
   # Fail2Ban on
   - systemctl enable --now fail2ban
+
+  # Reload SSH after keys are in place (config was written by write_files earlier)
+  - systemctl reload ssh || systemctl reload sshd
 
   # Run upstream Dokploy script as root
   - curl -fsSL https://dokploy.com/install.sh | sh

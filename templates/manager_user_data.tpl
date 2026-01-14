@@ -28,7 +28,7 @@ write_files:
     permissions: '0600'
     owner: root:root
     content: |
-      ${workers_public_ips}
+${workers_public_ips}
 
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
@@ -132,9 +132,6 @@ runcmd:
   - cp /tmp/worker_ips.txt /etc/swarm/workers-public.txt
   - rm -f /tmp/worker_ips.txt
 
-  # Apply SSH config
-  - systemctl reload ssh || systemctl reload sshd
-
   # UFW defaults + allows (keeps Security tab green)
   - ufw --force reset
   - ufw default deny incoming
@@ -152,6 +149,9 @@ runcmd:
 
   # Fail2Ban on
   - systemctl enable --now fail2ban
+
+  # Reload SSH after keys are in place (config was written by write_files earlier)
+  - systemctl reload ssh || systemctl reload sshd
 
   # Start swarm orchestration
   - systemctl daemon-reload

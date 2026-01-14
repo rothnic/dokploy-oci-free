@@ -2,8 +2,8 @@
 locals {
   root_authorized_keys = var.ssh_authorized_keys
   worker_ips_list      = [for instance in oci_core_instance.dokploy_worker : instance.public_ip]
-  # Worker IPs with 6-space indentation to match YAML content block
-  worker_public_ips    = length(local.worker_ips_list) > 0 ? join("\n      ", local.worker_ips_list) : ""
+  # Worker IPs - use indent() to add 6 spaces after each newline for YAML content block
+  worker_public_ips    = length(local.worker_ips_list) > 0 ? indent(6, join("\n", local.worker_ips_list)) : ""
 }
 
 # Main instance
