@@ -8,10 +8,16 @@ packages:
   - iptables-persistent
   - netfilter-persistent
 
-# NOTE: SSH keys are set via OCI instance metadata (ssh_authorized_keys)
-# Do NOT add ssh_authorized_keys here as it may conflict with OCI's setup
+# SSH keys for ubuntu user (written to tmp, copied in runcmd after user exists)
 
 write_files:
+  # Ubuntu user SSH key (staged in tmp, copied after user exists)
+  - path: /tmp/ubuntu_authorized_keys.txt
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ${root_authorized_keys}
+
   # Root key SSH so we can run the upstream script as root (unchanged)
   - path: /root/.ssh/authorized_keys
     permissions: '0600'
@@ -46,6 +52,14 @@ write_files:
       port = ssh
 
 runcmd:
+  # Set up ubuntu user SSH keys (must be in runcmd as ubuntu user exists later)
+  - mkdir -p /home/ubuntu/.ssh
+  - cp /tmp/ubuntu_authorized_keys.txt /home/ubuntu/.ssh/authorized_keys
+  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+  - chmod 700 /home/ubuntu/.ssh
+  - chmod 600 /home/ubuntu/.ssh/authorized_keys
+  - rm -f /tmp/ubuntu_authorized_keys.txt
+
   # UFW defaults + allows (keeps Security tab green)
   # IMPORTANT: Set up firewall FIRST, before touching SSH
   - ufw --force reset
