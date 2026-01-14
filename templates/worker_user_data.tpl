@@ -8,16 +8,16 @@ packages:
   - iptables-persistent
   - netfilter-persistent
 
-# SSH keys for ubuntu user (written to tmp, copied in runcmd after user exists)
+# Disable root login but keep SSH working
+disable_root: false
+ssh_pwauth: false
+
+# Inject SSH key for default user (ubuntu)
+ssh_authorized_keys:
+  - ${root_authorized_keys}
 
 write_files:
-  # Ubuntu user SSH key (staged in tmp, copied after user exists)
-  - path: /tmp/ubuntu_authorized_keys.txt
-    permissions: '0600'
-    owner: root:root
-    content: "${root_authorized_keys}\n"
-
-  # Root key SSH so we can run the upstream script as root (unchanged)
+  # Root key SSH so we can run the upstream script as root
   - path: /root/.ssh/authorized_keys
     permissions: '0600'
     owner: root:root
@@ -50,14 +50,6 @@ write_files:
       port = ssh
 
 runcmd:
-  # Set up ubuntu user SSH keys (must be in runcmd as ubuntu user exists later)
-  - mkdir -p /home/ubuntu/.ssh
-  - cp /tmp/ubuntu_authorized_keys.txt /home/ubuntu/.ssh/authorized_keys
-  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
-  - chmod 700 /home/ubuntu/.ssh
-  - chmod 600 /home/ubuntu/.ssh/authorized_keys
-  - rm -f /tmp/ubuntu_authorized_keys.txt
-
   # UFW defaults + allows (keeps Security tab green)
   # IMPORTANT: Set up firewall FIRST, before touching SSH
   - ufw --force reset
