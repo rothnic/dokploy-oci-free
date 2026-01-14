@@ -11,6 +11,68 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 : "${OCI_SSH_PRIVATE_KEY:=$HOME/.ssh/id_ed25519}"
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
+warn() { echo "[$(date '+%H:%M:%S')] ⚠️  $*" >&2; }
+err() { echo "[$(date '+%H:%M:%S')] ❌ $*" >&2; }
+
+# Safety check: warn about uncommitted changes that won't be deployed
+check_uncommitted_changes() {
+    local force="${1:-false}"
+    cd "$PROJECT_ROOT"
+    
+    # Check for uncommitted changes to tracked files
+    local changes
+    changes=$(git status --porcelain 2>/dev/null | grep -E '^( M|M |MM|A |AM)' | grep -vE '^\?\?' || true)
+    
+    if [[ -n "$changes" ]]; then
+        warn "UNCOMMITTED CHANGES DETECTED!"
+        warn "These changes will NOT be deployed (git archive uses HEAD):"
+        echo "$changes" | while read -r line; do
+            echo "  $line"
+        done
+        echo ""
+        
+        if [[ "$force" != "true" ]]; then
+            err "Commit changes first, or use --force to deploy stale code"
+            err "  git add -A && git commit -m 'your message'"
+            err "  $0 apply --force  # to skip this check"
+            return 1
+        else
+            warn "Proceeding with --force (deploying committed code only)"
+        fi
+    fi
+    return 0
+}
+
+# Safety check: warn if instances exist (for apply without prior destroy)
+check_active_instances() {
+    local force="${1:-false}"
+    
+    # Check if any compute instances are in RUNNING state
+    local resources
+    resources=$(oci resource-manager stack list-resources --stack-id "$OCI_STACK_ID" \
+        --query 'data.items[?contains(`resource-type`, `Instance`) && `resource-state`==`RUNNING`]' \
+        --raw-output 2>/dev/null || echo "[]")
+    
+    local count
+    count=$(echo "$resources" | jq 'length' 2>/dev/null || echo "0")
+    
+    if [[ "$count" -gt 0 ]]; then
+        warn "ACTIVE INSTANCES DETECTED ($count running)"
+        warn "Apply will NOT recreate instances with new user_data!"
+        warn "To deploy new user_data scripts, destroy first:"
+        echo ""
+        echo "  $0 destroy && $0 apply"
+        echo ""
+        
+        if [[ "$force" != "true" ]]; then
+            err "Use --force to apply anyway (won't update user_data on existing instances)"
+            return 1
+        else
+            warn "Proceeding with --force (existing instances keep old user_data)"
+        fi
+    fi
+    return 0
+}
 
 cmd_status() {
     log "=== Stack Status ==="
@@ -67,6 +129,12 @@ cmd_get_worker_ips() {
 }
 
 cmd_apply() {
+    local force="false"
+    [[ "${1:-}" == "--force" || "${1:-}" == "-f" ]] && force="true"
+    
+    check_uncommitted_changes "$force" || return 1
+    check_active_instances "$force" || return 1
+    
     log "=== Uploading Current Code ==="
     local zip_file="/tmp/dokploy-stack-$(date +%s).zip"
     cd "$PROJECT_ROOT"
@@ -224,22 +292,26 @@ cmd_join() {
 
 usage() {
     cat <<EOF
-Usage: $0 <command>
+Usage: $0 <command> [options]
 
 Commands:
   status    Show stack and job status
   outputs   Show stack outputs (IPs, URLs)
-  apply     Upload code and apply stack
+  apply     Upload code and apply stack (checks for uncommitted changes)
   destroy   Destroy all stack resources
   join      Join workers to Docker Swarm
   check     Verify deployed instances (SSH, Docker, Dokploy)
   ssh       SSH to instance (main, worker1, worker2, worker3)
   logs      Fetch cloud-init logs from main instance
 
+Options:
+  --force   Skip safety checks (uncommitted changes, active instances)
+
 Examples:
   $0 status
-  $0 apply
-  $0 join       # After instances are ready
+  $0 destroy && $0 apply   # Clean deploy with new user_data
+  $0 apply --force         # Skip checks (use with caution)
+  $0 join                  # After instances are ready
   $0 check
   $0 ssh main
 EOF
@@ -248,7 +320,7 @@ EOF
 case "${1:-}" in
     status) cmd_status ;;
     outputs) cmd_outputs ;;
-    apply) cmd_apply ;;
+    apply) cmd_apply "${2:-}" ;;
     destroy) cmd_destroy ;;
     join) cmd_join ;;
     check) cmd_check ;;
