@@ -137,7 +137,7 @@ log "Creating API key..."
 API_KEY_RESPONSE=$(curl -sf -X POST "http://localhost:3000/api/trpc/user.createApiKey?batch=1" \
     -H "Content-Type: application/json" \
     -b "better-auth.session_token=$SESSION_TOKEN" \
-    -d '{"0":{"json":{"name":"AutoSetup","expiresIn":null,"prefix":"auto","metadata":null,"rateLimitEnabled":false,"rateLimitTimeWindow":null,"rateLimitMax":null,"remaining":null,"refillAmount":null,"refillInterval":null},"meta":{"values":{"expiresIn":["undefined"],"rateLimitTimeWindow":["undefined"],"rateLimitMax":["undefined"],"remaining":["undefined"],"refillAmount":["undefined"],"refillInterval":["undefined"]}}}}' 2>&1)
+    -d '{"0":{"json":{"name":"AutoSetup","expiresIn":null,"prefix":"auto","metadata":{},"rateLimitEnabled":false,"rateLimitTimeWindow":null,"rateLimitMax":null,"remaining":null,"refillAmount":null,"refillInterval":null},"meta":{"values":{"expiresIn":["undefined"],"rateLimitTimeWindow":["undefined"],"rateLimitMax":["undefined"],"remaining":["undefined"],"refillAmount":["undefined"],"refillInterval":["undefined"]}}}}' 2>&1)
 log "API key response: $API_KEY_RESPONSE"
 
 API_KEY=$(echo "$API_KEY_RESPONSE" | jq -r '.[0].result.data.json.key' 2>/dev/null)
