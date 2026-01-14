@@ -1,12 +1,18 @@
-**/.terraform
-# .tfstate files
+
+.DS_Store
+.env
+.history
+.ssh
+.terraform.lock.hcl
+.vscode/
+*.plan
 *.tfstate
 *.tfstate.*
-*.plan
-.DS_Store
-.history
-.vscode/
-.env
-.ssh
+**/.terraform
+**/*.pem
+**/id_ed25519
+**/id_rsa
 **/node_modules/
-.terraform.lock.hcl
+**/ssh-keys/
+# .tfstate files
+# SSH keys - never commit
