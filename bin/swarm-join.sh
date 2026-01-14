@@ -46,7 +46,7 @@ wait_for_docker() {
     
     echo "  Waiting for Docker on $ip..."
     while [ $attempt -le $max_attempts ]; do
-        if ssh $SSH_OPTS ubuntu@"$ip" "docker info" &>/dev/null; then
+        if ssh $SSH_OPTS ubuntu@"$ip" "sudo docker info" &>/dev/null; then
             return 0
         fi
         sleep 5
