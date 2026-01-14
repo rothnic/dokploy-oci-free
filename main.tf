@@ -2,8 +2,8 @@
 locals {
   root_authorized_keys = var.ssh_authorized_keys
   worker_ips_list      = [for instance in oci_core_instance.dokploy_worker : instance.public_ip]
-  # Worker IPs - use indent() to add 6 spaces after each newline for YAML content block
-  worker_public_ips    = length(local.worker_ips_list) > 0 ? indent(6, join("\n", local.worker_ips_list)) : ""
+  # Use indent() to properly nest worker IPs in YAML content block (6 spaces)
+  worker_public_ips = length(local.worker_ips_list) > 0 ? indent(6, join("\n", local.worker_ips_list)) : ""
 }
 
 # Main instance
@@ -17,10 +17,8 @@ resource "oci_core_instance" "dokploy_main" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    user_data           = base64encode(templatefile("${path.module}/templates/manager_user_data.tpl", {
-      root_authorized_keys = local.root_authorized_keys,
-      workers_public_ips   = local.worker_public_ips,
-    }))
+    # Use shell script (not cloud-config) so OCI can inject SSH keys from metadata
+    user_data = base64encode(file("${path.module}/templates/manager_user_data.sh.tpl"))
   }
 
   create_vnic_details {
@@ -108,9 +106,7 @@ resource "oci_core_instance" "dokploy_worker" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    user_data           = base64encode(templatefile("${path.module}/templates/worker_user_data.tpl", {
-      root_authorized_keys = local.root_authorized_keys,
-    }))
+    user_data           = base64encode(file("${path.module}/templates/worker_user_data.sh.tpl"))
   }
 
   create_vnic_details {
