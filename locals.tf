@@ -1,4 +1,3 @@
-# Instance config
 locals {
   instance_config = {
     is_pv_encryption_in_transit_enabled = true
@@ -19,4 +18,6 @@ locals {
       are_legacy_imds_endpoints_disabled = false
     }
   }
+
+  admin_password = var.dokploy_admin_password != "" ? var.dokploy_admin_password : random_password.admin.result
 }

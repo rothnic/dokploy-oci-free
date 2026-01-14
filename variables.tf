@@ -46,3 +46,27 @@ variable "ocpus" {
   type        = string
   default     = "1" # OCI Free
 }
+
+variable "dokploy_admin_email" {
+  description = "Email address for the Dokploy admin user. This will be created automatically during setup."
+  type        = string
+}
+
+variable "dokploy_admin_password" {
+  description = "Password for the Dokploy admin user. If not provided, a random password will be generated."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "dokploy_admin_first_name" {
+  description = "First name for the Dokploy admin user."
+  type        = string
+  default     = "Admin"
+}
+
+variable "dokploy_admin_last_name" {
+  description = "Last name for the Dokploy admin user."
+  type        = string
+  default     = "User"
+}

@@ -17,8 +17,12 @@ resource "oci_core_instance" "dokploy_main" {
 
   metadata = {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
-    # Use shell script (not cloud-config) so OCI can inject SSH keys from metadata
-    user_data = base64encode(file("${path.module}/templates/manager_user_data.sh.tpl"))
+    user_data = base64encode(templatefile("${path.module}/templates/manager_user_data.sh.tpl", {
+      admin_email      = var.dokploy_admin_email
+      admin_password   = local.admin_password
+      admin_first_name = var.dokploy_admin_first_name
+      admin_last_name  = var.dokploy_admin_last_name
+    }))
   }
 
   create_vnic_details {
@@ -108,6 +112,8 @@ resource "oci_core_instance" "dokploy_worker" {
     ssh_authorized_keys = local.instance_config.ssh_authorized_keys
     user_data = base64encode(templatefile("${path.module}/templates/worker_user_data.sh.tpl", {
       manager_private_ip = oci_core_instance.dokploy_main.private_ip
+      worker_name        = "worker-${count.index + 1}"
+      worker_public_ip   = "pending"
     }))
   }
 

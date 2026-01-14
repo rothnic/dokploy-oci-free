@@ -290,6 +290,16 @@ cmd_join() {
     "$SCRIPT_DIR/swarm-join.sh"
 }
 
+cmd_setup() {
+    log "=== Setting Up Dokploy API ==="
+    "$SCRIPT_DIR/dokploy-setup.sh" "$@"
+}
+
+cmd_setup() {
+    log "=== Setting Up Dokploy API ==="
+    "$SCRIPT_DIR/dokploy-setup.sh" "$@"
+}
+
 usage() {
     cat <<EOF
 Usage: $0 <command> [options]
@@ -299,6 +309,7 @@ Commands:
   outputs   Show stack outputs (IPs, URLs)
   apply     Upload code and apply stack (checks for uncommitted changes)
   destroy   Destroy all stack resources
+  setup     Configure Dokploy (admin user, API key, register workers)
   join      Join workers to Docker Swarm
   check     Verify deployed instances (SSH, Docker, Dokploy)
   ssh       SSH to instance (main, worker1, worker2, worker3)
@@ -322,6 +333,7 @@ case "${1:-}" in
     outputs) cmd_outputs ;;
     apply) cmd_apply "${2:-}" ;;
     destroy) cmd_destroy ;;
+    setup) cmd_setup "${@:2}" ;;
     join) cmd_join ;;
     check) cmd_check ;;
     ssh) cmd_ssh "${2:-main}" ;;
