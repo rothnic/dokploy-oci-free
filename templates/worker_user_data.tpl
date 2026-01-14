@@ -1,4 +1,8 @@
 #cloud-config
+# IMPORTANT: Do NOT add ssh_authorized_keys, users, or disable_root here!
+# OCI injects SSH keys from instance metadata automatically.
+# Adding these directives BREAKS OCI's SSH injection.
+
 package_update: true
 packages:
   - ufw
@@ -8,21 +12,7 @@ packages:
   - iptables-persistent
   - netfilter-persistent
 
-# Disable root login but keep SSH working
-disable_root: false
-ssh_pwauth: false
-
-# Inject SSH key for default user (ubuntu)
-ssh_authorized_keys:
-  - ${root_authorized_keys}
-
 write_files:
-  # Root key SSH so we can run the upstream script as root
-  - path: /root/.ssh/authorized_keys
-    permissions: '0600'
-    owner: root:root
-    content: "${root_authorized_keys}\n"
-
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
     permissions: '0644'
