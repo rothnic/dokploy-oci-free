@@ -16,7 +16,19 @@ write_files:
     content: |
       ${root_authorized_keys}
 
+  # Temporary file for ubuntu SSH keys (will be copied in runcmd)
+  - path: /tmp/ubuntu_authorized_keys.txt
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ${root_authorized_keys}
 
+  # Temporary file for worker IPs (will be copied in runcmd)
+  - path: /tmp/worker_ips.txt
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ${workers_public_ips}
 
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
@@ -109,20 +121,16 @@ write_files:
 runcmd:
   # Set up ubuntu user SSH keys (must be in runcmd, not write_files, as ubuntu user exists later)
   - mkdir -p /home/ubuntu/.ssh
-  - |
-    cat > /home/ubuntu/.ssh/authorized_keys << 'UBUNTU_SSH_EOF'
-    ${root_authorized_keys}
-    UBUNTU_SSH_EOF
+  - cp /tmp/ubuntu_authorized_keys.txt /home/ubuntu/.ssh/authorized_keys
   - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
   - chmod 700 /home/ubuntu/.ssh
   - chmod 600 /home/ubuntu/.ssh/authorized_keys
+  - rm -f /tmp/ubuntu_authorized_keys.txt
 
-  # Create worker IPs file (avoids YAML injection issues)
+  # Create worker IPs file (copy from write_files to avoid YAML injection issues)
   - mkdir -p /etc/swarm
-  - |
-    cat > /etc/swarm/workers-public.txt << 'WORKER_IPS_EOF'
-    ${workers_public_ips}
-    WORKER_IPS_EOF
+  - cp /tmp/worker_ips.txt /etc/swarm/workers-public.txt
+  - rm -f /tmp/worker_ips.txt
 
   # Apply SSH config
   - systemctl reload ssh || systemctl reload sshd

@@ -2,8 +2,8 @@
 locals {
   root_authorized_keys = var.ssh_authorized_keys
   worker_ips_list      = [for instance in oci_core_instance.dokploy_worker : instance.public_ip]
-  # Simple newline with 4-space prefix for each IP (matches heredoc content indentation in runcmd)
-  worker_public_ips    = length(local.worker_ips_list) > 0 ? join("\n    ", local.worker_ips_list) : ""
+  # Worker IPs with 6-space indentation to match YAML content block
+  worker_public_ips    = length(local.worker_ips_list) > 0 ? join("\n      ", local.worker_ips_list) : ""
 }
 
 # Main instance
