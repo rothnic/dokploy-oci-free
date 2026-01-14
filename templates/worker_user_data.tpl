@@ -8,13 +8,8 @@ packages:
   - iptables-persistent
   - netfilter-persistent
 
-# Configure SSH for the default user (ubuntu on OCI)
-# Using 'default' preserves OCI's ubuntu user config and adds our key
-users:
-  - default
-
-ssh_authorized_keys:
-  - ${root_authorized_keys}
+# NOTE: SSH keys are set via OCI instance metadata (ssh_authorized_keys)
+# Do NOT add ssh_authorized_keys here as it may conflict with OCI's setup
 
 write_files:
   # Root key SSH so we can run the upstream script as root (unchanged)
