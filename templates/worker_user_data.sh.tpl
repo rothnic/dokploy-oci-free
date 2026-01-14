@@ -93,6 +93,12 @@ netfilter-persistent save
 
 log "Base setup complete, now joining swarm and registering with Dokploy..."
 
+# Exit early if already complete (prevents duplicate registration on service restart)
+if [ -f /opt/dokploy-worker-setup-complete ]; then
+    log "Worker setup already complete, exiting"
+    exit 0
+fi
+
 poll_manager() {
     local endpoint="$1"
     local attempt=0
@@ -164,12 +170,8 @@ if [ -z "$SERVER_ID" ] || [ "$SERVER_ID" = "null" ]; then
 fi
 log "Server created with ID: $SERVER_ID"
 
-log "Adding server to cluster..."
-CLUSTER_RESPONSE=$(curl -sf -X POST "http://$MANAGER_IP:3000/api/trpc/cluster.addWorker?batch=1" \
-    -H "Content-Type: application/json" \
-    -H "x-api-key: $API_KEY" \
-    -d "{\"0\":{\"json\":{\"serverId\":\"$SERVER_ID\"}}}" 2>&1)
-log "Cluster add response: $CLUSTER_RESPONSE"
+# Workers automatically appear in the cluster once they join swarm and register via server.create
+# No separate cluster.addWorker call needed (that API is for getting swarm join commands)
 
 log "Dokploy Worker setup complete!"
 log "Server ID: $SERVER_ID"
