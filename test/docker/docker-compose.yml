@@ -1,0 +1,82 @@
+services:
+  manager:
+    build:
+      context: .
+      dockerfile: Dockerfile.oci-sim
+      args:
+        USER_DATA_FILE: rendered/manager-user-data.yml
+    container_name: dokploy-manager
+    hostname: dokploy-manager
+    privileged: true
+    cgroup: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - manager-docker:/var/lib/docker
+    ports:
+      - "3001:3000"
+      - "2222:22"
+    networks:
+      swarm-net:
+        ipv4_address: 172.28.0.10
+    environment:
+      - ROLE=manager
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  worker1:
+    build:
+      context: .
+      dockerfile: Dockerfile.oci-sim
+      args:
+        USER_DATA_FILE: rendered/worker-user-data.yml
+    container_name: dokploy-worker1
+    hostname: dokploy-worker1
+    privileged: true
+    cgroup: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - worker1-docker:/var/lib/docker
+    networks:
+      swarm-net:
+        ipv4_address: 172.28.0.11
+    environment:
+      - ROLE=worker
+    depends_on:
+      - manager
+
+  worker2:
+    build:
+      context: .
+      dockerfile: Dockerfile.oci-sim
+      args:
+        USER_DATA_FILE: rendered/worker-user-data.yml
+    container_name: dokploy-worker2
+    hostname: dokploy-worker2
+    privileged: true
+    cgroup: host
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - worker2-docker:/var/lib/docker
+    networks:
+      swarm-net:
+        ipv4_address: 172.28.0.12
+    environment:
+      - ROLE=worker
+    depends_on:
+      - manager
+
+networks:
+  swarm-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  manager-docker:
+  worker1-docker:
+  worker2-docker:

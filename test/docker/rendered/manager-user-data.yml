@@ -14,21 +14,22 @@ write_files:
     permissions: '0600'
     owner: root:root
     content: |
-      ${root_authorized_keys}
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9ZwxLDRko+ufo7kp5nEAavu3OnvNnJXVc6wqt9q61CU77W8q926bG40ScahG8QUyYJfJI1eg2oLrouugiV+PX7tqOO1hKmm1rqrjX+a8QWydKa8hViFnJbHqQCV+OBoO+nUJFQVwBBrA17UkKLN49u695FzHe3UBFAXLgezk+ukQt0zPRwe35Hr3lhS5viw4rzInWFutC5SsCNNuRPj1zLo1bH5uyRV4w6EJMm0xr3PltHVA0ZQEJQiMQr7hHmjhCFShIB1VXcf02q1RSbNJYOomeYnOfb3izmIY97ucg5H0o0puGQoF4yRgDCCOOMg2J8IeRjnkg3bAV4hM8lQ6tus4kDUUTj6SDPVnqO11LsCBMbp5Rh6kT5js21V0SC5MRCzJgVVvG5c7y0Ba+9OVwEhxXvmXiA0dpP4cOCtbunQ81xYK0+c+/OAw2ChitZVbTx3yWKVNy5t0qjbY5HsBrFIlEBSrSPwy1kvklNKS2/8phg43ojTVC0rPdkJn+wDY+9u+fjdUbDqZlbNzXMsB+rcE5aF42dHiw47zJaENE79zcQjKvPF3MiBdZayJAOifQl4iDvEJQC5ulPEnEoIHGIDfASVJ5ip08UVar1MVzOxv0PhJCFtEfr01jberhcv3yKNvxSTKKFWAgKx/WfTtt8+rjze7Gicciae2K/KfFVw== dokploy-test
 
   # Temporary file for ubuntu SSH keys (will be copied in runcmd)
   - path: /tmp/ubuntu_authorized_keys.txt
     permissions: '0600'
     owner: root:root
     content: |
-      ${root_authorized_keys}
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9ZwxLDRko+ufo7kp5nEAavu3OnvNnJXVc6wqt9q61CU77W8q926bG40ScahG8QUyYJfJI1eg2oLrouugiV+PX7tqOO1hKmm1rqrjX+a8QWydKa8hViFnJbHqQCV+OBoO+nUJFQVwBBrA17UkKLN49u695FzHe3UBFAXLgezk+ukQt0zPRwe35Hr3lhS5viw4rzInWFutC5SsCNNuRPj1zLo1bH5uyRV4w6EJMm0xr3PltHVA0ZQEJQiMQr7hHmjhCFShIB1VXcf02q1RSbNJYOomeYnOfb3izmIY97ucg5H0o0puGQoF4yRgDCCOOMg2J8IeRjnkg3bAV4hM8lQ6tus4kDUUTj6SDPVnqO11LsCBMbp5Rh6kT5js21V0SC5MRCzJgVVvG5c7y0Ba+9OVwEhxXvmXiA0dpP4cOCtbunQ81xYK0+c+/OAw2ChitZVbTx3yWKVNy5t0qjbY5HsBrFIlEBSrSPwy1kvklNKS2/8phg43ojTVC0rPdkJn+wDY+9u+fjdUbDqZlbNzXMsB+rcE5aF42dHiw47zJaENE79zcQjKvPF3MiBdZayJAOifQl4iDvEJQC5ulPEnEoIHGIDfASVJ5ip08UVar1MVzOxv0PhJCFtEfr01jberhcv3yKNvxSTKKFWAgKx/WfTtt8+rjze7Gicciae2K/KfFVw== dokploy-test
 
   # Temporary file for worker IPs (will be copied in runcmd)
   - path: /tmp/worker_ips.txt
     permissions: '0600'
     owner: root:root
     content: |
-      ${workers_public_ips}
+      172.28.0.11
+      172.28.0.12
 
   # SSH hardening expected by Dokploy's checks
   - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf

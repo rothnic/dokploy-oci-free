@@ -1,0 +1,83 @@
+#cloud-config
+package_update: true
+packages:
+  - ufw
+  - fail2ban
+  - ca-certificates
+  - curl
+  - iptables-persistent
+  - netfilter-persistent
+
+write_files:
+  # Root key SSH so we can run the upstream script as root (unchanged)
+  - path: /root/.ssh/authorized_keys
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9ZwxLDRko+ufo7kp5nEAavu3OnvNnJXVc6wqt9q61CU77W8q926bG40ScahG8QUyYJfJI1eg2oLrouugiV+PX7tqOO1hKmm1rqrjX+a8QWydKa8hViFnJbHqQCV+OBoO+nUJFQVwBBrA17UkKLN49u695FzHe3UBFAXLgezk+ukQt0zPRwe35Hr3lhS5viw4rzInWFutC5SsCNNuRPj1zLo1bH5uyRV4w6EJMm0xr3PltHVA0ZQEJQiMQr7hHmjhCFShIB1VXcf02q1RSbNJYOomeYnOfb3izmIY97ucg5H0o0puGQoF4yRgDCCOOMg2J8IeRjnkg3bAV4hM8lQ6tus4kDUUTj6SDPVnqO11LsCBMbp5Rh6kT5js21V0SC5MRCzJgVVvG5c7y0Ba+9OVwEhxXvmXiA0dpP4cOCtbunQ81xYK0+c+/OAw2ChitZVbTx3yWKVNy5t0qjbY5HsBrFIlEBSrSPwy1kvklNKS2/8phg43ojTVC0rPdkJn+wDY+9u+fjdUbDqZlbNzXMsB+rcE5aF42dHiw47zJaENE79zcQjKvPF3MiBdZayJAOifQl4iDvEJQC5ulPEnEoIHGIDfASVJ5ip08UVar1MVzOxv0PhJCFtEfr01jberhcv3yKNvxSTKKFWAgKx/WfTtt8+rjze7Gicciae2K/KfFVw== dokploy-test
+
+  # Temporary file for ubuntu SSH keys (will be copied in runcmd)
+  - path: /tmp/ubuntu_authorized_keys.txt
+    permissions: '0600'
+    owner: root:root
+    content: |
+      ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC9ZwxLDRko+ufo7kp5nEAavu3OnvNnJXVc6wqt9q61CU77W8q926bG40ScahG8QUyYJfJI1eg2oLrouugiV+PX7tqOO1hKmm1rqrjX+a8QWydKa8hViFnJbHqQCV+OBoO+nUJFQVwBBrA17UkKLN49u695FzHe3UBFAXLgezk+ukQt0zPRwe35Hr3lhS5viw4rzInWFutC5SsCNNuRPj1zLo1bH5uyRV4w6EJMm0xr3PltHVA0ZQEJQiMQr7hHmjhCFShIB1VXcf02q1RSbNJYOomeYnOfb3izmIY97ucg5H0o0puGQoF4yRgDCCOOMg2J8IeRjnkg3bAV4hM8lQ6tus4kDUUTj6SDPVnqO11LsCBMbp5Rh6kT5js21V0SC5MRCzJgVVvG5c7y0Ba+9OVwEhxXvmXiA0dpP4cOCtbunQ81xYK0+c+/OAw2ChitZVbTx3yWKVNy5t0qjbY5HsBrFIlEBSrSPwy1kvklNKS2/8phg43ojTVC0rPdkJn+wDY+9u+fjdUbDqZlbNzXMsB+rcE5aF42dHiw47zJaENE79zcQjKvPF3MiBdZayJAOifQl4iDvEJQC5ulPEnEoIHGIDfASVJ5ip08UVar1MVzOxv0PhJCFtEfr01jberhcv3yKNvxSTKKFWAgKx/WfTtt8+rjze7Gicciae2K/KfFVw== dokploy-test
+
+  # SSH hardening expected by Dokploy's checks
+  - path: /etc/ssh/sshd_config.d/99-dokploy-hardening.conf
+    permissions: '0644'
+    owner: root:root
+    content: |
+      PubkeyAuthentication yes
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      UsePAM no
+      PermitRootLogin prohibit-password
+
+  # Fail2Ban: protect SSH aggressively
+  - path: /etc/fail2ban/jail.d/sshd.local
+    permissions: '0644'
+    owner: root:root
+    content: |
+      [sshd]
+      enabled = true
+      backend = systemd
+      mode = aggressive
+      maxretry = 5
+      findtime = 10m
+      bantime = 1h
+      port = ssh
+
+runcmd:
+  # Set up ubuntu user SSH keys (must be in runcmd, not write_files, as ubuntu user exists later)
+  - mkdir -p /home/ubuntu/.ssh
+  - cp /tmp/ubuntu_authorized_keys.txt /home/ubuntu/.ssh/authorized_keys
+  - chown -R ubuntu:ubuntu /home/ubuntu/.ssh
+  - chmod 700 /home/ubuntu/.ssh
+  - chmod 600 /home/ubuntu/.ssh/authorized_keys
+  - rm -f /tmp/ubuntu_authorized_keys.txt
+
+  # UFW defaults + allows (keeps Security tab green)
+  - ufw --force reset
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 443/udp
+  - ufw allow 3000/tcp
+  - ufw allow 2377/tcp
+  - ufw allow 7946/tcp
+  - ufw allow 7946/udp
+  - ufw allow 4789/udp
+  - ufw --force enable
+
+  # Fail2Ban on
+  - systemctl enable --now fail2ban
+
+  # Reload SSH after keys are in place (config was written by write_files earlier)
+  - systemctl reload ssh || systemctl reload sshd
+
+  # Run upstream Dokploy script as root
+  - curl -fsSL https://dokploy.com/install.sh | sh

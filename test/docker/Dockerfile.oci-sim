@@ -1,0 +1,62 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
+
+ARG USER_DATA_FILE=rendered/manager-user-data.yml
+
+RUN apt-get update && apt-get install -y \
+    systemd \
+    systemd-sysv \
+    cloud-init \
+    openssh-server \
+    sudo \
+    curl \
+    wget \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    iproute2 \
+    iptables \
+    ufw \
+    fail2ban \
+    netcat-openbsd \
+    jq \
+    vim \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y docker-ce docker-ce-cli containerd.io \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash -G sudo,docker ubuntu \
+    && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu
+
+RUN mkdir -p /run/sshd \
+    && mkdir -p /root/.ssh \
+    && chmod 700 /root/.ssh
+
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl* \
+    /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup* \
+    /lib/systemd/system/systemd-update-utmp*
+
+RUN mkdir -p /var/lib/cloud/seed/nocloud-net
+
+COPY ${USER_DATA_FILE} /var/lib/cloud/seed/nocloud-net/user-data
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 22 80 443 3000 2377 7946 4789
+
+VOLUME ["/sys/fs/cgroup", "/var/lib/docker"]
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/lib/systemd/systemd"]
