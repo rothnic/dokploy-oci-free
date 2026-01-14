@@ -183,7 +183,13 @@ SSH_CREATE_RESPONSE=$(curl -sf -X POST "http://localhost:3000/api/trpc/sshKey.cr
     -d "{\"0\":{\"json\":{\"name\":\"OCI-Workers\",\"publicKey\":$ESCAPED_PUBLIC,\"privateKey\":$ESCAPED_PRIVATE,\"organizationId\":\"$ORG_ID\"}}}" 2>&1)
 log "SSH create response: $SSH_CREATE_RESPONSE"
 
-SSH_KEY_ID=$(echo "$SSH_CREATE_RESPONSE" | jq -r '.[0].result.data.json.sshKeyId' 2>/dev/null)
+# sshKey.create returns null on success, so we need to query for the key
+log "Fetching SSH key ID..."
+SSH_KEYS_RESPONSE=$(curl -sf "http://localhost:3000/api/trpc/sshKey.all?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%7D%7D" \
+    -H "x-api-key: $API_KEY" 2>&1)
+log "SSH keys response: $SSH_KEYS_RESPONSE"
+
+SSH_KEY_ID=$(echo "$SSH_KEYS_RESPONSE" | jq -r '.[0].result.data.json[] | select(.name=="OCI-Workers") | .sshKeyId' 2>/dev/null)
 if [ -z "$SSH_KEY_ID" ] || [ "$SSH_KEY_ID" = "null" ]; then
     log "ERROR: Failed to create SSH key in Dokploy"
     exit 1
