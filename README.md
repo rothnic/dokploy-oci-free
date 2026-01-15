@@ -1,98 +1,104 @@
 # Dokploy Deployment on OCI Free Tier
 
-This Terraform project deploys a Dokploy instance along with worker nodes in Oracle Cloud Infrastructure (OCI) Free Tier. **Dokploy** is an open-source platform to manage your app deployments and server configurations.
+This Terraform project deploys a **fully automated** Dokploy cluster on Oracle Cloud Infrastructure (OCI) Free Tier. No local tools required - everything is configured via the OCI web console.
 
 ## Deploy
 
 [![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/statickidz/dokploy-oci-free/archive/refs/heads/main.zip)
 
-*Clicking the "Deploy to Oracle Cloud" button will load the Oracle Cloud Resource Manager to deploy the infrastructure described in this Terraform project. During deployment, you'll be prompted to configure the stack parameters. Review the settings, then launch the stack deployment.*
+*Click the button above to deploy directly from GitHub. Configure variables in the web UI, then apply.*
+
+## What Gets Deployed
+
+| Component | Description |
+|-----------|-------------|
+| **Main Node** | Dokploy dashboard, Docker Swarm leader, Traefik reverse proxy |
+| **Worker Nodes** | 1-3 Docker Swarm workers (configurable) |
+| **Admin Account** | Pre-configured with your email/password |
+| **API Key** | Auto-generated for programmatic access |
+| **SSH Keys** | Generated and distributed to all workers |
+
+## Fully Automated Setup
+
+Unlike typical deployments, **everything is automated**:
+
+1. ✅ Dokploy installation
+2. ✅ Admin account creation  
+3. ✅ API key generation
+4. ✅ SSH key generation and distribution
+5. ✅ Workers join Docker Swarm
+6. ✅ Workers register in Dokploy dashboard
+
+**See [doc/ARCHITECTURE.md](doc/ARCHITECTURE.md) for detailed workflow diagrams and implementation details.**
+
+## After Deployment
+
+Your credentials appear in the stack job outputs:
+
+```
+Dashboard: http://MAIN_IP:3000/
+Email:     your-email@example.com
+Password:  TEMPORARY_PASSWORD
+```
+
+⚠️ **IMPORTANT**: Change your password immediately after first login!  
+Go to: Dashboard → Settings → Profile → Change Password
 
 ## About Dokploy
 
 ![Dokploy Logo](doc/dokploy-logo.webp)
 
-Dokploy is an open-source deployment tool designed to simplify the management of servers, applications, and databases on your own infrastructure with minimal setup. It streamlines CI/CD pipelines, ensuring easy and consistent deployments.
+Dokploy is an open-source deployment tool designed to simplify the management of servers, applications, and databases on your own infrastructure with minimal setup.
 
-For more information, visit the official page at [dokploy.com](https://dokploy.com).
+For more information, visit [dokploy.com](https://dokploy.com).
 
 ![Dokploy Screenshot](doc/dokploy-screenshot.png)
 
-## OCI Free Tier Overview
+## OCI Free Tier
 
-Oracle Cloud Infrastructure (OCI) offers a Free Tier with resources ideal for light workloads, such as the VM.Standard.E2.1.Micro instance. These resources are free as long as usage remains within the limits.
+Oracle Cloud Infrastructure offers a Free Tier with resources ideal for light workloads. The ARM-based VM.Standard.A1.Flex instances provide excellent performance for Dokploy.
 
-For detailed information about the free tier, visit [OCI Free Tier](https://www.oracle.com/cloud/free/).
+For detailed information, visit [OCI Free Tier](https://www.oracle.com/cloud/free/).
 
-*Note: Free Tier instances are subject to availability, and you might encounter "Out of Capacity" errors. To bypass this, upgrade to a paid account. This keeps your free-tier benefits but removes the capacity limitations, ensuring access to higher-tier resources if needed.*
+**Note**: Free Tier instances are subject to availability. Upgrade to a paid account (keeps free-tier benefits) to remove capacity limitations.
 
-## Prerequisites
+## License
 
-Before you begin, ensure you have the following:
-
--   An Oracle Cloud Infrastructure (OCI) account with Free Tier resources available.
--   An SSH public key for accessing the instances.
-
-## Servers & Cluster
-
-### Add Servers to Dokploy
-
-To begin deploying applications, you need to add servers to your Dokploy cluster. A server in Dokploy is where your applications will be deployed and managed.
-
-#### Steps to Add Servers:
-
-1.  **Login to Dokploy Dashboard**:
-    -   Access the Dokploy dashboard via the main instance's public IP address. You'll need to use the login credentials configured during setup.
-1.  **Generate SSH Keys**:
-    -   On the left-hand menu, click on "SSH Keys" and add your private and public SSH key to connect your server.
-2.  **Navigate to Servers Section**:
-    -   On the left-hand menu, click on "Servers" and then "Add Server."
-3.  **Fill in Server Details**:
-    -   **Server Name**: Give your server a meaningful name.
-    -   **IP Address**: Enter the public IP address of the instance. If you’re using private networking, you can enter the private IP address instead.
-    -   **SSH Key**: Select the previous created SSH key.
-    -   **Username**: The SSH user for connecting to the server, use `root`.
-4.  **Submit**:
-    -   After filling out the necessary fields, click "Submit" to add the server.
-
-### Configure a Dokploy Cluster with new workers
-
-Worker nodes are automatically configured and joined to the Docker Swarm cluster during deployment. The infrastructure includes comprehensive security hardening that passes all [Dokploy security checks](https://docs.dokploy.com/docs/core/multi-server/security), including:
-
-- UFW firewall with restrictive defaults
-- SSH hardening (key-only authentication, no password/PAM)
-- Fail2Ban protection against brute force attacks
-- Proper Docker Swarm networking configuration
-
-**Note**: While workers are automatically joined to the swarm, you still need to manually add each worker as a remote server in the Dokploy dashboard to deploy applications to them. Non-root server setup is being tracked in [Dokploy issue #1126](https://github.com/Dokploy/dokploy/issues/1126).
-
-See more info about configuring your cluster on the [Dokploy Cluster Docs](https://docs.dokploy.com/docs/core/cluster).
-
-## Project Structure
-
--   `bin/`: Contains bash scripts for legacy setup approaches (now replaced by cloud-config templates).
--   `templates/`: Cloud-config templates for automated, secure deployment.
-    -   `manager_user_data.tpl`: Main instance template with Dokploy installation and automatic worker joining.
-    -   `worker_user_data.tpl`: Worker instance template with security hardening and Docker setup.
--   `helper.tf`: Contains helper functions and reusable modules to streamline the infrastructure setup.
--   `doc/`: Directory for images used in the README (e.g., screenshots of Dokploy setup).
--   `locals.tf`: Defines local values used throughout the Terraform configuration, such as dynamic values or reusable expressions.
--   `main.tf`: Core Terraform configuration file that defines the infrastructure for Dokploy's main and worker instances.
--   `network.tf`: Configuration for setting up the required OCI networking resources (VCNs, subnets, security lists, etc.).
--   `output.tf`: Specifies the output variables such as the IP addresses for the dashboard and worker nodes.
--   `providers.tf`: Declares the required cloud providers and versions, particularly for Oracle Cloud Infrastructure.
--   `README.md`: This file, providing instructions on deployment and usage.
--   `variables.tf`: Defines input variables used in the project, including compartment ID, SSH keys, instance shape, and more.
+MIT
 
 ## Terraform Variables
 
-Below are the key variables for deployment which are defined in `variables.tf`:
+### Required Variables
 
--   `ssh_authorized_keys`: Your SSH public key for accessing the instances.
--   `compartment_id`: OCI compartment ID for instance deployment.
--   `num_worker_instances`: Number of worker instances to deploy for Dokploy.
--   `availability_domain_main`: Availability domain for the main instance.
--   `availability_domain_workers`: Availability domains for worker instances.
--   `instance_shape`: Instance shape (e.g., VM.Standard.E2.1.Micro) used for deployment.
--   `memory_in_gbs`: Memory size (GB) per instance.
--   `ocpus`: Number of OCPUs per instance.
+| Variable | Description |
+|----------|-------------|
+| `ssh_authorized_keys` | Your SSH public key for instance access |
+| `compartment_id` | OCI compartment ID for deployment |
+| `dokploy_admin_email` | Admin email for Dokploy login |
+
+### Optional Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `dokploy_admin_password` | Auto-generated | Admin password (shown in outputs if auto-generated) |
+| `dokploy_admin_first_name` | "Admin" | Admin first name |
+| `dokploy_admin_last_name` | "User" | Admin last name |
+| `num_worker_instances` | 3 | Number of worker nodes (0-3) |
+| `instance_shape` | VM.Standard.A1.Flex | OCI instance shape |
+| `memory_in_gbs` | 6 | Memory per instance (GB) |
+| `ocpus` | 1 | OCPUs per instance |
+
+## Project Structure
+
+```
+├── bin/                  # Helper scripts for local development
+├── doc/                  # Documentation and diagrams
+│   └── ARCHITECTURE.md   # Detailed workflow documentation
+├── templates/            # Cloud-init templates
+│   ├── manager_user_data.sh.tpl   # Main node setup
+│   └── worker_user_data.sh.tpl    # Worker node setup
+├── main.tf               # Core infrastructure
+├── variables.tf          # Input variables
+├── output.tf             # Stack outputs
+└── network.tf            # VCN and security lists
+```
