@@ -60,6 +60,36 @@ Dashboard → Settings → Profile → Change Password
 | `memory_in_gbs` | 6 | Memory per instance |
 | `ocpus` | 1 | OCPUs per instance |
 
+## Security Hardening
+
+All nodes are automatically hardened with:
+
+| Security Layer | Configuration |
+|----------------|---------------|
+| **UFW Firewall** | Active, default deny incoming |
+| **SSH** | Key-only auth, password disabled |
+| **Fail2Ban** | Enabled with SSH jail (bantime=1hr, maxretry=3) |
+
+### Workers Pre-configured
+
+![Workers Pre-configured](doc/workers-preconfigured.png)
+
+### Security Status in Dokploy
+
+![Security Status](doc/security-status.png)
+
+### Known Issues
+
+Dokploy's security audit (v0.26.x) has [known bugs](https://github.com/Dokploy/dokploy/issues/1377) that may show false warnings:
+
+| Reported Issue | Actual Status |
+|----------------|---------------|
+| "Password Auth Enabled" | **False positive** - disabled via `PasswordAuthentication no` |
+| "UsePAM Enabled" | Expected - required for Ubuntu cloud-init SSH |
+| "SSH Protection Not Enabled" | **False positive** - Fail2Ban sshd jail is active |
+
+Verify actual config via SSH: `ssh ubuntu@MAIN_IP 'sudo sshd -T | grep passwordauth'`
+
 ## Documentation
 
 - [Architecture & Workflow](doc/ARCHITECTURE.md) - Sequence diagrams, component architecture
