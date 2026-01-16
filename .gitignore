@@ -19,5 +19,10 @@
 # .tfstate files
 # SSH keys - never commit
 tmp/
-.sisyphus/
 .local/
+
+# Terraform local state (we use OCI Resource Manager)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
