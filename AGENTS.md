@@ -43,6 +43,8 @@ bin/stack.sh outputs  # Get IPs and credentials
 bin/stack.sh check    # Verify SSH connectivity
 ```
 
+**Important:** Only committed files are included in `stack apply`. The script uses `git archive HEAD` to create the zip uploaded to OCI. Uncommitted changes will not be deployed.
+
 ### Known Issues
 
 See README.md for Dokploy security audit bugs (GitHub #1377).
