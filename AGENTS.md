@@ -2,7 +2,7 @@
 
 ## Temporary Files
 
-Place all temporary files in the `.local/` directory:
+Place all temporary files in the `tmp/` directory:
 
 - Screenshots
 - Logs
@@ -12,12 +12,12 @@ Place all temporary files in the `.local/` directory:
 
 ```bash
 # Example
-.local/screenshot.png
-.local/debug.log
-.local/test-output.json
+tmp/screenshot.png
+tmp/debug.log
+tmp/test-output.json
 ```
 
-The `.local/` directory is gitignored and will not be committed.
+The `tmp/` directory is gitignored and will not be committed.
 
 ## Project Overview
 
@@ -30,7 +30,7 @@ Terraform project deploying Dokploy on Oracle Cloud Infrastructure (OCI) Free Ti
 | `bin/` | Helper scripts (`stack.sh` for OCI operations) |
 | `doc/` | Documentation and committed screenshots |
 | `templates/` | Cloud-init templates for manager/worker nodes |
-| `.local/` | Temporary files (gitignored) |
+| `tmp/` | Temporary files (gitignored) |
 
 ### Stack Management
 

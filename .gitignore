@@ -18,8 +18,8 @@
 **/ssh-keys/
 # .tfstate files
 # SSH keys - never commit
+# Temporary files (logs, screenshots, debug output)
 tmp/
-.local/
 
 # Terraform local state (we use OCI Resource Manager)
 .terraform/
