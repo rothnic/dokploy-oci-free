@@ -98,7 +98,7 @@ Verify actual config via SSH: `ssh ubuntu@MAIN_IP 'sudo sshd -T | grep passworda
 ## Project Structure
 
 ```
-├── bin/                  # Helper scripts (stack.sh, swarm-join.sh)
+├── bin/                  # Helper scripts (stack.sh)
 ├── doc/                  # Documentation
 ├── templates/            # Cloud-init templates (.sh.tpl)
 ├── *.tf                  # Terraform configuration

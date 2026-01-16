@@ -285,11 +285,6 @@ cmd_logs() {
         'cat /var/log/cloud-init-output.log 2>/dev/null' || echo "Could not fetch logs"
 }
 
-cmd_join() {
-    log "=== Joining Workers to Swarm ==="
-    "$SCRIPT_DIR/swarm-join.sh"
-}
-
 cmd_setup() {
     log "=== Setting Up Dokploy API ==="
     "$SCRIPT_DIR/dokploy-setup.sh" "$@"
@@ -310,7 +305,6 @@ Commands:
   apply     Upload code and apply stack (checks for uncommitted changes)
   destroy   Destroy all stack resources
   setup     Configure Dokploy (admin user, API key, register workers)
-  join      Join workers to Docker Swarm
   check     Verify deployed instances (SSH, Docker, Dokploy)
   ssh       SSH to instance (main, worker1, worker2, worker3)
   logs      Fetch cloud-init logs from main instance
@@ -322,7 +316,6 @@ Examples:
   $0 status
   $0 destroy && $0 apply   # Clean deploy with new user_data
   $0 apply --force         # Skip checks (use with caution)
-  $0 join                  # After instances are ready
   $0 check
   $0 ssh main
 EOF
@@ -334,7 +327,6 @@ case "${1:-}" in
     apply) cmd_apply "${2:-}" ;;
     destroy) cmd_destroy ;;
     setup) cmd_setup "${@:2}" ;;
-    join) cmd_join ;;
     check) cmd_check ;;
     ssh) cmd_ssh "${2:-main}" ;;
     logs) cmd_logs "${2:-}" ;;
