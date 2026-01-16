@@ -24,11 +24,8 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 ChallengeResponseAuthentication no
-UsePAM no
 PermitRootLogin prohibit-password
 EOF
-
-systemctl restart sshd
 
 apt_retry() {
     local attempt=0
