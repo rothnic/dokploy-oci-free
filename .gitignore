@@ -20,3 +20,4 @@
 # SSH keys - never commit
 tmp/
 .sisyphus/
+.local/
