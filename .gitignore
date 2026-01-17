@@ -1,12 +1,28 @@
-**/.terraform
-# .tfstate files
+
+.DS_Store
+.env
+.env.local
+.dokploy-credentials
+.history
+.ssh
+.terraform.lock.hcl
+.vscode/
+*.plan
 *.tfstate
 *.tfstate.*
-*.plan
-.DS_Store
-.history
-.vscode/
-.env
-.ssh
+**/.terraform
+**/*.pem
+**/id_ed25519
+**/id_rsa
 **/node_modules/
+**/ssh-keys/
+# .tfstate files
+# SSH keys - never commit
+# Temporary files (logs, screenshots, debug output)
+tmp/
+
+# Terraform local state (we use OCI Resource Manager)
+.terraform/
 .terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
