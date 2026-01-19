@@ -184,6 +184,28 @@ resource "oci_core_security_list" "dokploy_security_list" {
     description = "Allow Docker Swarm UDP traffic on port 4789"
   }
 
+  # Token server for swarm join (internal VCN only)
+  ingress_security_rules {
+    protocol = "6" # TCP
+    source   = "10.0.0.0/16"
+    tcp_options {
+      min = 9999
+      max = 9999
+    }
+    description = "Allow token server for swarm join on port 9999"
+  }
+
+  # Token server for swarm join (internal VCN only)
+  ingress_security_rules {
+    protocol = "6" # TCP
+    source   = "10.0.0.0/16"
+    tcp_options {
+      min = 9999
+      max = 9999
+    }
+    description = "Allow token server for swarm join on port 9999"
+  }
+
   # Egress Rule (optional, if needed)
   egress_security_rules {
     protocol    = "all"
